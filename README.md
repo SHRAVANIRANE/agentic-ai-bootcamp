@@ -2,18 +2,23 @@
 
 An AI-assisted retail inventory system that forecasts demand, recommends reorder quantities, and explains decisions in plain English using Llama 3 via Ollama.
 
-## Architecture
+## System Architecture
 
 ```text
-CSV data
-  -> DataPreprocessor
-  -> FeatureEngineer
-  -> XGBoostForecaster
-  -> ForecastingService
-  -> LLMService
-  -> FastAPI REST API
-  -> React dashboard
+CSV Data (73,100 rows)
+        ↓
+DataPreprocessor → FeatureEngineer → XGBoostForecaster (+ SHAP)
+                                              ↓
+                                    ForecastingService
+                                              ↓
+                              LLMService (Llama 3 via Ollama)
+                                              ↓
+                                    FastAPI REST API
+                                              ↓
+                                    React Dashboard
 ```
+
+---
 
 ## Tech Stack
 
@@ -29,24 +34,30 @@ CSV data
 ## Project Structure
 
 ```text
-backend/
-  app/
-    api/routes/       forecast, reorder, agent endpoints
-    agents/           LangChain agent and tools
-    core/             config and logging
-    models/           Pydantic schemas
-    pipeline/         preprocessing, feature engineering, XGBoost
-    services/         data, forecasting, reorder, LLM services
-  tests/
-  requirements.txt
-frontend/
-  src/
-    components/
-    pages/
-data/
-  retail_store_inventory.csv
-docker-compose.yml
+inventory-demand-forecasting-shap/
+├── backend/
+│   ├── app/
+│   │   ├── api/routes/        # forecast, reorder, agent endpoints
+│   │   ├── agents/            # LangChain ReAct agent + tools
+│   │   ├── core/              # config, logging
+│   │   ├── models/            # Pydantic schemas
+│   │   ├── pipeline/          # preprocessor, feature engineer, XGBoost
+│   │   └── services/          # forecasting, reorder, LLM, data services
+│   ├── tests/
+│   └── requirements.txt
+├── frontend/
+│   ├── src/
+│   │   ├── components/        # ForecastChart, ReorderTable, AgentChat
+│   │   └── pages/             # Dashboard
+│   └── package.json
+├── data/
+│   └── retail_store_inventory.csv
+├── notebooks/
+│   └── inventory_forecasting.ipynb
+└── docker-compose.yml
 ```
+
+---
 
 ## Prerequisites
 
@@ -55,11 +66,19 @@ docker-compose.yml
 - Ollama installed and running
 - Llama model: `llama3:8b-instruct-q4_0`
 
-## Run Locally On Windows PowerShell
+## Setup & Run Locally (Windows PowerShell)
 
-Run these commands from the project root.
+### 1. Clone the repo
 
 ```powershell
+git clone https://github.com/SHRAVANIRANE/agentic-ai-bootcamp.git
+cd agentic-ai-bootcamp
+```
+
+### 2. Backend
+
+```powershell
+cd backend
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
@@ -87,10 +106,10 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 Backend:
-
 - API: `http://localhost:8000`
 - Docs: `http://localhost:8000/docs`
-- Health check: `http://localhost:8000/health`
+
+### 3. Frontend
 
 Start the frontend in another terminal:
 
@@ -105,30 +124,11 @@ Frontend: `http://localhost:3000`
 
 Use `S001` and `P0001` as the first sample store/product pair.
 
-## Run Locally On macOS / Linux
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-ollama pull llama3:8b-instruct-q4_0
-cd backend
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
-```
-
-In another terminal:
-
-```bash
-cd frontend
-npm install
-VITE_API_URL=http://localhost:8000/api/v1 npm start
-```
+---
 
 ## API Endpoints
 
-Forecast demand:
-
+### Forecast demand
 ```http
 POST /api/v1/forecast/
 ```
@@ -141,8 +141,7 @@ POST /api/v1/forecast/
 }
 ```
 
-Reorder recommendation:
-
+### Reorder recommendation
 ```http
 POST /api/v1/reorder/
 ```
@@ -156,8 +155,7 @@ POST /api/v1/reorder/
 }
 ```
 
-AI agent chat:
-
+### AI agent chat
 ```http
 POST /api/v1/agent/chat
 ```
@@ -170,20 +168,30 @@ POST /api/v1/agent/chat
 }
 ```
 
-Trend explanation:
+---
 
-```http
-GET /api/v1/forecast/trends?store_id=S001&product_id=P0001
-```
+## How It Works
 
-## Docker
+### Forecasting Pipeline
+1. Raw CSV is cleaned and validated by `DataPreprocessor`
+2. `FeatureEngineer` builds lag features, rolling stats, calendar features, price sensitivity
+3. `XGBoostForecaster` trains a per-product model with time-based train/val split
+4. SHAP values identify the top demand drivers for each product
+5. Multi-step ahead forecast is generated with confidence intervals
+
+### LLM Explanation
+- SHAP top drivers + forecast stats are passed to Llama 3
+- Llama 3 generates plain English business explanations
+
+---
+
+## Docker Deployment
 
 ```bash
 docker compose up --build
 ```
 
 Services:
-
 - Backend API: `http://localhost:8000`
 - Frontend: `http://localhost:3000`
 - Ollama: `http://localhost:11434`
@@ -195,9 +203,21 @@ After the Ollama container starts, pull the model into it:
 docker compose exec ollama ollama pull llama3:8b-instruct-q4_0
 ```
 
-## Tests
+---
+
+## Running Tests
 
 ```bash
 cd backend
 pytest tests/ -v
 ```
+
+---
+
+## Key Features
+
+- **Zero manual training** — models train automatically
+- **SHAP explainability** — shows which features drove the prediction
+- **LLM reasoning** — Llama 3 explains trends and reorder decisions
+- **LangChain ReAct agent** — conversational interface for inventory Q&A
+- **Production ready** — async FastAPI, structured logging, Pydantic validation
