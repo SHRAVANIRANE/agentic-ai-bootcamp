@@ -1,10 +1,10 @@
-# 📦 Inventory Demand Forecasting Agent
+#  Inventory Demand Forecasting Agent
 
 An industry-level, fully deployable AI system that forecasts retail inventory demand, recommends optimal reorder quantities, and explains decisions in plain English using **Llama 3 via Ollama**.
 
 ---
 
-## 🏗️ System Architecture
+##  System Architecture
 
 ```
 CSV Data (73,100 rows)
@@ -22,7 +22,7 @@ DataPreprocessor → FeatureEngineer → XGBoostForecaster (+ SHAP)
 
 ---
 
-## 🚀 Tech Stack
+##  Tech Stack
 
 | Layer | Technology |
 |---|---|
@@ -35,7 +35,7 @@ DataPreprocessor → FeatureEngineer → XGBoostForecaster (+ SHAP)
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 inventory-demand-forecasting-shap/
@@ -63,7 +63,7 @@ inventory-demand-forecasting-shap/
 
 ---
 
-## ⚙️ Prerequisites
+##  Prerequisites
 
 - Python 3.11+
 - Node.js 18+
@@ -77,7 +77,7 @@ ollama pull llama3
 
 ---
 
-## 🛠️ Setup & Run
+##  Setup & Run
 
 ### 1. Clone the repo
 
@@ -116,7 +116,7 @@ ollama serve
 
 ---
 
-## 📡 API Endpoints
+##  API Endpoints
 
 ### Forecast demand
 ```bash
@@ -156,7 +156,7 @@ GET /api/v1/forecast/trends?store_id=S001&product_id=P0001
 
 ---
 
-## 🧠 How It Works
+##  How It Works
 
 ### Forecasting Pipeline
 1. Raw CSV is cleaned and validated by `DataPreprocessor`
@@ -180,7 +180,7 @@ Order Qty     = forecasted_demand + safety_stock - current_inventory
 
 ---
 
-## 📊 Dataset
+##  Dataset
 
 - **73,100 rows** of retail store inventory data
 - **5 stores** × **multiple products** × **2 years** of daily data
@@ -188,7 +188,7 @@ Order Qty     = forecasted_demand + safety_stock - current_inventory
 
 ---
 
-## 🐳 Docker Deployment
+##  Docker Deployment
 
 ```bash
 docker compose up --build
@@ -202,7 +202,7 @@ Services started:
 
 ---
 
-## ✅ Running Tests
+##  Running Tests
 
 ```bash
 cd backend
@@ -211,7 +211,7 @@ PYTHONPATH=. pytest tests/ -v
 
 ---
 
-## 🌟 Key Features
+##  Key Features
 
 - **Zero manual training** — models train automatically on first API request and cache in memory
 - **SHAP explainability** — every forecast shows which features drove the prediction
