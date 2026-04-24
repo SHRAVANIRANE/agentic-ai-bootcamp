@@ -1,4 +1,25 @@
-# Python ignore
+# Python
 __pycache__/
-*.ipynb_checkpoints
+*.py[cod]
+*.pyo
+.env
+*.egg-info/
+.pytest_cache/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# Logs
+server.log
+*.log
+nohup.out
+
+# OS
 .DS_Store
+
+# Models (too large for git)
+*.pkl
+*.joblib
+*.model

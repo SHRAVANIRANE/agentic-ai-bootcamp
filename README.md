@@ -1,154 +1,221 @@
+# 📦 Inventory Demand Forecasting Agent
 
-# 📦 Smart Inventory Forecasting with External Signals
-
-Inventory forecasting isn’t just about looking backward — it’s about **understanding what drives real demand**: weather, price, promotions, seasons, and more.
-
-In this project, we build a demand forecasting pipeline that captures **multi-dimensional signals** across time, region, and products — and ends with **SHAP explainability** to make every prediction accountable.
+An industry-level, fully deployable AI system that forecasts retail inventory demand, recommends optimal reorder quantities, and explains decisions in plain English using **Llama 3 via Ollama**.
 
 ---
 
-## 📁 Dataset Overview
+## 🏗️ System Architecture
 
-We used a structured retail inventory dataset with 73,000+ rows from multiple stores and product categories. Each row represents daily demand at the **product-store level** with contextual features like weather and promotions.
-
-| Column              | Description                          |
-|---------------------|--------------------------------------|
-| `Date`              | Daily granularity                    |
-| `Store ID`          | Multiple retail stores               |
-| `Product ID`        | Unique identifier per product        |
-| `Category`          | Product type (e.g., Toys, Grocery)   |
-| `Region`            | Store location                       |
-| `Inventory Level`   | Stock available                      |
-| `Units Sold`        | 🔥 Target variable                    |
-| `Units Ordered`     | Orders placed (leaky)                |
-| `Demand Forecast`   | Past system forecast (leaky)         |
-| `Weather Condition` | Sunny, Rainy, etc.                   |
-| `Holiday/Promotion` | Binary promo flag                    |
-| `Competitor Pricing`| External competitor influence        |
-| `Seasonality`       | Categorical season label             |
-
----
-
-## 🧾 Step 1: Exploratory Data Analysis (EDA)
-
-Before forecasting, we explored how categories, stores, and weather interact with demand.
-
-### 🧸 Product Category Distribution
-<p align="center">
-  <img src="./assets/category_distribution.png" width="420"/>
-</p>
-
-> Balanced spread — not dominated by any one category.
-
-### 🏬 Region × Store ID Mapping
-<p align="center">
-  <img src="./assets/region_store_distribution.png" width="420"/>
-</p>
-
-> Clear regional diversity across multiple stores.
-
-### 🌦️ Units Sold vs Weather Condition
-<p align="center">
-  <img src="./assets/weather_vs_units_sold.png" width="420"/>
-</p>
-
-> Weather influences demand: higher variability during extreme conditions.
-
----
-
-## 🏗️ Step 2: Feature Engineering
-
-We extracted **temporal features** from `Date` like `DayOfWeek`, `Is_Weekend`, and dropped **leaky future data** (`Units Ordered`, `Demand Forecast`) to ensure fair modeling.
-
-### 🔍 Correlation Heatmap (Before Leak Removal)
-<p align="center">
-  <img src="./assets/feature_correlation_heatmap.png" width="460"/>
-</p>
-
-> Units Ordered & Forecast are overly correlated with sales → dropped.
-
----
-
-## 🔢 Step 3: Encoding & Preprocessing
-
-- **Label Encoded** categorical features (`Store ID`, `Product ID`, etc.)
-- Dropped `Date`
-- Split into train/test **before scaling**
-- Applied **Standard Scaling** to numerical variables for better model convergence
-
----
-
-## ⚙️ Step 4: XGBoost Regression
-
-We used **XGBoost** to predict `Units Sold` based on contextual signals.
-
-```txt
-📉 MAE: 12.47  
-📊 RMSE: 19.02  
-📈 R² Score: 0.843
+```
+CSV Data (73,100 rows)
+        ↓
+DataPreprocessor → FeatureEngineer → XGBoostForecaster (+ SHAP)
+                                              ↓
+                                    ForecastingService
+                                              ↓
+                              LLMService (Llama 3 via Ollama)
+                                              ↓
+                                    FastAPI REST API
+                                              ↓
+                                    React Dashboard
 ```
 
-### 📈 Actual vs Predicted
-<p align="center">
-  <img src="./assets/actual_vs_predicted.png" width="440"/>
-</p>
+---
 
-> Model generalizes well — no major under/overfit. Residuals are tight.
+## 🚀 Tech Stack
+
+| Layer | Technology |
+|---|---|
+| ML Forecasting | XGBoost + SHAP Explainability |
+| LLM Reasoning | Llama 3 (8B) via Ollama |
+| Agent Orchestration | LangChain ReAct Agent |
+| Backend API | FastAPI + Uvicorn |
+| Frontend | React + Vite + Recharts |
+| Data Processing | Pandas + NumPy |
 
 ---
 
-## 🧠 Step 5: SHAP Explainability
+## 📁 Project Structure
 
-### 5.1 📊 Global Feature Importance (Top 10)
-<p align="center">
-  <img src="./assets/shap_summary_bar.png" width="460"/>
-</p>
-
-> `Price`, `Competitor Pricing`, `Inventory Level`, and `Promotion` were the top drivers.
-
----
-
-### 5.2 🔍 Local Prediction Breakdown
-
-We picked one real prediction where the model forecasted high demand.
-
-<p align="center">
-  <img src="./assets/shap_waterfall_sample.png" width="580"/>
-</p>
-
-> **Why did the model predict high demand?**  
-> - ✅ It was a weekend  
-> - ✅ Price was low  
-> - ✅ Competitor pricing was high  
-> - ✅ Seasonality matched high-sales trend
-
----
-
-## 🧠 What We Achieved
-
-✔ Built an explainable forecasting model beyond basic time series  
-✔ Integrated **external signals** (weather, pricing, promotions)  
-✔ Avoided leakage by carefully inspecting correlation and target proxies  
-✔ Made our model **accountable with SHAP**  
+```
+inventory-demand-forecasting-shap/
+├── backend/
+│   ├── app/
+│   │   ├── api/routes/        # forecast, reorder, agent endpoints
+│   │   ├── agents/            # LangChain ReAct agent + tools
+│   │   ├── core/              # config, logging
+│   │   ├── models/            # Pydantic schemas
+│   │   ├── pipeline/          # preprocessor, feature engineer, XGBoost
+│   │   └── services/          # forecasting, reorder, LLM, data services
+│   ├── tests/
+│   └── requirements.txt
+├── frontend/
+│   ├── src/
+│   │   ├── components/        # ForecastChart, ReorderTable, AgentChat
+│   │   └── pages/             # Dashboard
+│   └── package.json
+├── data/
+│   └── retail_store_inventory.csv
+├── notebooks/
+│   └── inventory_forecasting.ipynb
+└── docker-compose.yml
+```
 
 ---
 
-## 💡 Key Lessons
+## ⚙️ Prerequisites
 
-- Forecasting isn’t only about past values — **context matters**
-- Leaky features may seem “helpful” but ruin generalization
-- SHAP brings **trust** to regression models too — not just classification
+- Python 3.11+
+- Node.js 18+
+- [Ollama](https://ollama.com) installed and running
+- Llama 3 model pulled
 
----
-
-## 🧰 Tools Used
-
-- 📦 pandas, seaborn, matplotlib  
-- 🔁 LabelEncoder, StandardScaler, train_test_split  
-- ⚙️ XGBoost  
-- 🔍 SHAP for explainability
+```bash
+# Install Ollama then pull the model
+ollama pull llama3
+```
 
 ---
 
-> Built to bridge raw retail signals with real-world decisions.  
-> Because demand isn’t just a number — it’s a story in motion. 🚚📈
+## 🛠️ Setup & Run
+
+### 1. Clone the repo
+
+```bash
+git clone https://github.com/SHRAVANIRANE/agentic-ai-bootcamp.git
+cd agentic-ai-bootcamp
+cd inventory-demand-forecasting-shap
+```
+
+### 2. Backend
+
+```bash
+cd backend
+pip install -r requirements.txt
+PYTHONPATH=. uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Backend runs at: `http://localhost:8000`
+API docs at: `http://localhost:8000/docs`
+
+### 3. Frontend
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+Frontend runs at: `http://localhost:3000`
+
+### 4. Make sure Ollama is running
+
+```bash
+ollama serve
+```
+
+---
+
+## 📡 API Endpoints
+
+### Forecast demand
+```bash
+POST /api/v1/forecast/
+{
+  "store_id": "S001",
+  "product_id": "P0001",
+  "horizon_days": 7
+}
+```
+
+### Reorder recommendation
+```bash
+POST /api/v1/reorder/
+{
+  "store_id": "S001",
+  "product_id": "P0001",
+  "current_inventory": 100,
+  "lead_time_days": 7
+}
+```
+
+### AI Agent chat
+```bash
+POST /api/v1/agent/chat
+{
+  "message": "Should I reorder P0001 at S001 if I have 50 units left?",
+  "store_id": "S001",
+  "product_id": "P0001"
+}
+```
+
+### Trend explanation
+```bash
+GET /api/v1/forecast/trends?store_id=S001&product_id=P0001
+```
+
+---
+
+## 🧠 How It Works
+
+### Forecasting Pipeline
+1. Raw CSV is cleaned and validated by `DataPreprocessor`
+2. `FeatureEngineer` builds lag features (7/14/21/28 days), rolling stats, calendar features, price sensitivity
+3. `XGBoostForecaster` trains a per-product model with time-based train/val split
+4. SHAP values identify the top demand drivers for each product
+5. Multi-step ahead forecast is generated with confidence intervals
+
+### Reorder Engine
+Uses industry-standard supply chain formulas:
+```
+Safety Stock  = 1.65 × σ_demand × √lead_time × multiplier
+Reorder Point = (avg_daily_demand × lead_time) + safety_stock
+Order Qty     = forecasted_demand + safety_stock - current_inventory
+```
+
+### LLM Explanation
+- SHAP top drivers + forecast stats are passed to Llama 3
+- Llama 3 generates plain English business explanations
+- Falls back to rule-based explanation if Ollama is unavailable
+
+---
+
+## 📊 Dataset
+
+- **73,100 rows** of retail store inventory data
+- **5 stores** × **multiple products** × **2 years** of daily data
+- Features: Units Sold, Price, Discount, Weather, Promotions, Competitor Pricing, Seasonality
+
+---
+
+## 🐳 Docker Deployment
+
+```bash
+docker compose up --build
+```
+
+Services started:
+- Backend API on port `8000`
+- Frontend on port `3000`
+- Ollama on port `11434`
+- Redis on port `6379`
+
+---
+
+## ✅ Running Tests
+
+```bash
+cd backend
+PYTHONPATH=. pytest tests/ -v
+```
+
+---
+
+## 🌟 Key Features
+
+- **Zero manual training** — models train automatically on first API request and cache in memory
+- **SHAP explainability** — every forecast shows which features drove the prediction
+- **LLM reasoning** — Llama 3 explains trends and reorder decisions in plain English
+- **LangChain ReAct agent** — conversational interface for inventory Q&A
+- **Fallback handling** — works even when Ollama is slow or unavailable
+- **Production ready** — async FastAPI, structured logging, Pydantic validation, Docker support
