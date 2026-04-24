@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379"
 
     # Gemini
-    GEMINI_API_KEY: str = "AIzaSyBYYv0LMgSD02GLmDXahR9RhcwC4gwkHbo"
+    GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemma-3-1b-it"
     LLM_TEMPERATURE: float = 0.1
 

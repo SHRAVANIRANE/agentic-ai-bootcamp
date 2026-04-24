@@ -2,9 +2,14 @@
 __pycache__/
 *.py[cod]
 *.pyo
-.env
 *.egg-info/
 .pytest_cache/
+
+# Environment files (never commit secrets)
+.env
+.env.local
+.env.production.local
+backend/.env
 
 # Node
 frontend/node_modules/
@@ -12,7 +17,7 @@ frontend/dist/
 frontend/.env
 frontend/package-lock.json
 
-# Data (too large for git)
+# Data (large files)
 data/*.csv
 data/*.json
 
@@ -28,7 +33,3 @@ Thumbs.db
 # Models
 backend/models/*.pkl
 backend/models/*.joblib
-
-# Secrets
-.env.local
-.env.production.local

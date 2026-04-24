@@ -15,7 +15,6 @@ scikit-learn==1.7.2
 
 # LangChain + Gemini
 langchain==1.2.15
-langchain-classic==1.0.4
 langchain-core==1.3.0
 langchain-google-genai==4.2.2
 google-generativeai==0.8.6

@@ -4,7 +4,7 @@ const API = import.meta.env.VITE_API_URL;
 
 interface UploadResult { message: string; rows: number; stores: string[]; source: string; }
 
-export default function DataUpload({ onUploadSuccess }: { onUploadSuccess: (stores: string[]) => void }) {
+export default function DataUpload({ onUploadSuccess }: { onUploadSuccess: (stores: string[], products: string[]) => void }) {
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<UploadResult | null>(null);
   const [error, setError] = useState("");
@@ -20,7 +20,8 @@ export default function DataUpload({ onUploadSuccess }: { onUploadSuccess: (stor
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Upload failed");
       setResult(data);
-      onUploadSuccess(data.stores);
+      // Pass both stores AND products back so dashboard resets selectors
+      onUploadSuccess(data.stores, data.products);
     } catch (err: any) { setError(err.message); }
     setUploading(false);
   };
@@ -30,7 +31,7 @@ export default function DataUpload({ onUploadSuccess }: { onUploadSuccess: (stor
     const res = await fetch(`${API}/data/reset`, { method: "POST" });
     const data = await res.json();
     setResult(data);
-    onUploadSuccess(data.stores);
+    onUploadSuccess(data.stores, []);
     setUploading(false);
   };
 

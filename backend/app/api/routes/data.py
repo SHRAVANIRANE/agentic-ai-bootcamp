@@ -1,25 +1,19 @@
 import json
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from app.api.dependencies import get_data_service
-from app.services.forecasting_service import ForecastingService
-from app.api.dependencies import get_forecasting_service
+from app.api.dependencies import get_data_service, get_forecasting_service
 
 router = APIRouter(prefix="/data", tags=["Data Upload"])
 
 
-@router.post("/upload")
-async def upload_file(file: UploadFile = File(...)) -> dict:
-    """
-    Upload a CSV or JSON file to replace the active dataset.
-    CSV format: must have date, store_id, product_id, units_sold columns.
-    JSON format: array of objects with same fields.
-    """
-    ds = get_data_service()
-
-    # Clear model cache when new data is uploaded
+def _clear_cache():
+    """Clear model cache on the singleton forecasting service."""
     fs = get_forecasting_service()
     fs._model_cache.clear()
 
+
+@router.post("/upload")
+async def upload_file(file: UploadFile = File(...)) -> dict:
+    ds = get_data_service()
     content = await file.read()
     filename = file.filename or "uploaded_file"
 
@@ -34,6 +28,9 @@ async def upload_file(file: UploadFile = File(...)) -> dict:
         else:
             raise HTTPException(status_code=400, detail="Only CSV and JSON files are supported")
 
+        # Clear model cache AFTER new data is loaded into the singleton data service
+        _clear_cache()
+
         return {
             "message": f"Successfully loaded {result['rows']} rows from {filename}",
             "rows": result["rows"],
@@ -47,11 +44,9 @@ async def upload_file(file: UploadFile = File(...)) -> dict:
 
 @router.post("/reset")
 def reset_data() -> dict:
-    """Reset back to the default retail_store_inventory.csv dataset."""
     ds = get_data_service()
-    fs = get_forecasting_service()
-    fs._model_cache.clear()
     result = ds.reset_to_default()
+    _clear_cache()
     return {
         "message": "Reset to default dataset",
         "rows": result["rows"],
@@ -62,7 +57,6 @@ def reset_data() -> dict:
 
 @router.get("/info")
 def data_info() -> dict:
-    """Get info about the currently loaded dataset."""
     ds = get_data_service()
     return {
         "source": ds.source,

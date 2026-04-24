@@ -12,8 +12,9 @@ export default function Dashboard() {
   const [storeId, setStoreId] = useState("S001");
   const [productId, setProductId] = useState("P0001");
   const [applied, setApplied] = useState({ storeId: "S001", productId: "P0001" });
-  const [dataInfo, setDataInfo] = useState({ rows: 0, source: "default" });
+  const [dataInfo, setDataInfo] = useState({ rows: 0, source: "default", totalProducts: 0 });
   const [activeTab, setActiveTab] = useState<"forecast" | "chat" | "upload">("forecast");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     fetch(`${API}/forecast/stores`)
@@ -22,9 +23,9 @@ export default function Dashboard() {
       .catch(() => setStores(["S001", "S002", "S003", "S004", "S005"]));
     fetch(`${API}/data/info`)
       .then((r) => r.json())
-      .then((d) => setDataInfo({ rows: d.rows, source: d.source }))
+      .then((d) => setDataInfo({ rows: d.rows, source: d.source, totalProducts: d.total_products }))
       .catch(() => {});
-  }, []);
+  }, [refreshKey]);
 
   useEffect(() => {
     fetch(`${API}/forecast/products?store_id=${storeId}`)
@@ -45,7 +46,7 @@ export default function Dashboard() {
 
   const stats = [
     { label: "Stores", value: stores.length || 5, icon: null, cls: "blue" },
-    { label: "Products", value: products.length || 50, icon: null, cls: "purple" },
+    { label: "Products", value: dataInfo.totalProducts || products.length, icon: null, cls: "purple" },
     { label: "Data Rows", value: dataInfo.rows ? dataInfo.rows.toLocaleString() : "73,100", icon: null, cls: "green" },
     { label: "Source", value: dataInfo.source === "default" ? "Default" : dataInfo.source.slice(0, 12), icon: null, cls: "orange" },
   ];
@@ -117,9 +118,16 @@ export default function Dashboard() {
           <AgentChat storeId={applied.storeId} productId={applied.productId} />
         )}
         {activeTab === "upload" && (
-          <DataUpload onUploadSuccess={(newStores) => {
+          <DataUpload onUploadSuccess={(newStores, newProducts) => {
             setStores(newStores);
-            setStoreId(newStores[0] || "S001");
+            const firstStore = newStores[0] || "S001";
+            const firstProduct = newProducts[0] || "P0001";
+            setStoreId(firstStore);
+            setProductId(firstProduct);
+            setProducts(newProducts);
+            setApplied({ storeId: firstStore, productId: firstProduct });
+            setRefreshKey(k => k + 1);
+            setActiveTab("forecast");
           }} />
         )}
       </div>

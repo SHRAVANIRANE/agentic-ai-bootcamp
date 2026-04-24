@@ -1,208 +1,316 @@
-# 📦 Inventory Demand Forecasting Agent
+# Inventory Demand Forecasting Agent
 
-An industry-level, fully deployable AI system that forecasts retail inventory demand, recommends optimal reorder quantities, and explains decisions in plain English using **Llama 3 via Ollama**.
+A production-grade AI system that forecasts retail inventory demand, recommends optimal reorder quantities, and explains decisions in plain English using a Gemma 3 language model.
 
----
-
-## 🏗️ System Architecture
-
-```
-CSV Data (73,100 rows)
-        ↓
-DataPreprocessor → FeatureEngineer → XGBoostForecaster (+ SHAP)
-                                              ↓
-                                    ForecastingService
-                                              ↓
-                              LLMService (Llama 3 via Ollama)
-                                              ↓
-                                    FastAPI REST API
-                                              ↓
-                                    React Dashboard
-```
+Built with XGBoost for demand forecasting, LangChain for agent orchestration, FastAPI for the backend API, and React for the dashboard.
 
 ---
 
-## 🚀 Tech Stack
+## What It Does
+
+- Reads historical sales data (CSV or JSON)
+- Trains an XGBoost model per store/product combination automatically on first request
+- Forecasts demand for the next 7 to 60 days with confidence intervals
+- Calculates reorder point, safety stock, and recommended order quantity using industry-standard supply chain formulas
+- Explains trends and reorder decisions in plain English using Gemma 3 via Google AI API
+- Provides a conversational AI chat interface grounded in real forecast data
+- Supports uploading your own CSV or JSON data to retrain on company-specific inventory
+
+---
+
+## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| ML Forecasting | XGBoost + SHAP Explainability |
-| LLM Reasoning | Llama 3 (8B) via Ollama |
-| Agent Orchestration | LangChain ReAct Agent |
-| Backend API | FastAPI + Uvicorn |
-| Frontend | React + Vite + Recharts |
+| ML Forecasting | XGBoost + feature engineering (lag, rolling, calendar) |
+| LLM | Gemma 3 via Google Generative AI API |
+| Agent Orchestration | LangChain |
+| Backend | FastAPI + Uvicorn |
+| Frontend | React + Vite + TypeScript + Recharts |
 | Data Processing | Pandas + NumPy |
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 inventory-demand-forecasting-shap/
 ├── backend/
 │   ├── app/
-│   │   ├── api/routes/        # forecast, reorder, agent endpoints
-│   │   ├── agents/            # LangChain ReAct agent + tools
-│   │   ├── core/              # config, logging
-│   │   ├── models/            # Pydantic schemas
-│   │   ├── pipeline/          # preprocessor, feature engineer, XGBoost
-│   │   └── services/          # forecasting, reorder, LLM, data services
+│   │   ├── api/
+│   │   │   └── routes/          # forecast, reorder, chat, data, agent
+│   │   ├── agents/              # LangChain ReAct agent + tools
+│   │   ├── core/                # config, logging
+│   │   ├── models/              # Pydantic schemas
+│   │   ├── pipeline/            # preprocessor, feature engineer, XGBoost
+│   │   └── services/            # forecasting, reorder, LLM, data services
+│   ├── models/                  # saved .pkl model files (gitignored)
 │   ├── tests/
 │   └── requirements.txt
 ├── frontend/
-│   ├── src/
-│   │   ├── components/        # ForecastChart, ReorderTable, AgentChat
-│   │   └── pages/             # Dashboard
-│   └── package.json
+│   └── src/
+│       ├── components/          # ForecastChart, ReorderTable, AgentChat, DataUpload
+│       └── pages/               # Dashboard
 ├── data/
-│   └── retail_store_inventory.csv
+│   ├── sample_inventory.csv     # sample dataset (3 stores, 4 products, 1 year)
+│   └── sample_inventory.json    # sample dataset in JSON format (500 rows)
+├── scripts/
+│   └── pretrain_models.py       # pre-train all models before deployment
 ├── notebooks/
 │   └── inventory_forecasting.ipynb
+├── render.yaml
+├── Procfile
 └── docker-compose.yml
 ```
 
 ---
 
-## ⚙️ Prerequisites
+## Prerequisites
 
-- Python 3.11+
+- Python 3.11
 - Node.js 18+
-- [Ollama](https://ollama.com) installed and running
-- Llama 3 model pulled
-
-```bash
-# Install Ollama then pull the model
-ollama pull llama3
-```
+- A Google AI API key (free at https://aistudio.google.com/app/apikey)
+- conda (recommended) or virtualenv
 
 ---
 
-## 🛠️ Setup & Run
+## Local Setup
 
-### 1. Clone the repo
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/SHRAVANIRANE/agentic-ai-bootcamp.git
-cd agentic-ai-bootcamp
-cd inventory-demand-forecasting-shap
+cd agentic-ai-bootcamp/inventory-demand-forecasting-shap
 ```
 
-### 2. Backend
+### 2. Create and activate Python environment
+
+```bash
+conda create -n inventory-agent python=3.11 -y
+conda activate inventory-agent
+```
+
+### 3. Install backend dependencies
 
 ```bash
 cd backend
 pip install -r requirements.txt
-PYTHONPATH=. uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-Backend runs at: `http://localhost:8000`
-API docs at: `http://localhost:8000/docs`
+On macOS, XGBoost requires OpenMP:
+```bash
+brew install libomp
+```
 
-### 3. Frontend
+### 4. Add your Gemini API key
 
+Create a `.env` file inside the `backend/` folder:
+```
+GEMINI_API_KEY=your_api_key_here
+GEMINI_MODEL=gemma-3-1b-it
+```
+
+### 5. Add sample data
+
+The repo includes sample datasets in `data/`. You can use either:
+- `data/sample_inventory.csv` — 4,380 rows, 3 stores, 4 products, 1 year
+- `data/sample_inventory.json` — 500 rows in JSON format
+
+To use the sample data, update `backend/app/services/data_service.py` line 12:
+```python
+_DATA_PATH = Path(__file__).parents[4] / "data" / "sample_inventory.csv"
+```
+
+### 6. Start the backend
+
+```bash
+cd backend
+PYTHONPATH=. python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+You should see:
+```
+Application startup complete.
+Uvicorn running on http://0.0.0.0:8000
+```
+
+### 7. Install and start the frontend
+
+Open a new terminal:
 ```bash
 cd frontend
 npm install
 npm start
 ```
 
-Frontend runs at: `http://localhost:3000`
-
-### 4. Make sure Ollama is running
-
-```bash
-ollama serve
-```
+Frontend runs at: http://localhost:3000
+API docs at: http://localhost:8000/docs
 
 ---
 
-## 📡 API Endpoints
+## Sample Data Format
 
-### Forecast demand
-```bash
-POST /api/v1/forecast/
-{
-  "store_id": "S001",
-  "product_id": "P0001",
-  "horizon_days": 7
-}
+### CSV format
+
+```csv
+Date,Store ID,Product ID,Category,Region,Inventory Level,Units Sold,Units Ordered,Demand Forecast,Price,Discount,Weather Condition,Holiday/Promotion,Competitor Pricing,Seasonality
+2023-01-01,S001,P0001,Electronics,North,264,150,74,148.78,161.48,20,Snowy,0,147.64,Winter
+2023-01-02,S001,P0001,Electronics,North,393,133,157,125.35,155.16,15,Sunny,0,159.53,Winter
 ```
 
-### Reorder recommendation
-```bash
-POST /api/v1/reorder/
-{
-  "store_id": "S001",
-  "product_id": "P0001",
-  "current_inventory": 100,
-  "lead_time_days": 7
-}
+### JSON format
+
+```json
+[
+  {
+    "date": "2023-01-01",
+    "store_id": "S001",
+    "product_id": "P0001",
+    "units_sold": 150,
+    "price": 161.48,
+    "discount": 20,
+    "inventory_level": 264,
+    "is_promotion": 0,
+    "weather_condition": "Snowy",
+    "competitor_price": 147.64,
+    "seasonality": "Winter",
+    "category": "Electronics",
+    "region": "North"
+  }
+]
 ```
 
-### AI Agent chat
-```bash
-POST /api/v1/agent/chat
-{
-  "message": "Should I reorder P0001 at S001 if I have 50 units left?",
-  "store_id": "S001",
-  "product_id": "P0001"
-}
+### Minimum required columns
+
+Only these 4 columns are required. All others are optional and improve forecast accuracy:
+
+```
+date, store_id, product_id, units_sold
 ```
 
-### Trend explanation
-```bash
-GET /api/v1/forecast/trends?store_id=S001&product_id=P0001
-```
+### Minimum rows needed
+
+- 50 rows per product — works but low accuracy
+- 100 to 365 rows per product — good accuracy
+- 365+ rows per product — best, captures full seasonality
 
 ---
 
-## 🧠 How It Works
+## API Endpoints
 
-### Forecasting Pipeline
-1. Raw CSV is cleaned and validated by `DataPreprocessor`
-2. `FeatureEngineer` builds lag features (7/14/21/28 days), rolling stats, calendar features, price sensitivity
-3. `XGBoostForecaster` trains a per-product model with time-based train/val split
-4. SHAP values identify the top demand drivers for each product
-5. Multi-step ahead forecast is generated with confidence intervals
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/health` | Health check |
+| POST | `/api/v1/forecast/` | Get demand forecast |
+| GET | `/api/v1/forecast/stores` | List all stores |
+| GET | `/api/v1/forecast/products?store_id=S001` | List products for a store |
+| GET | `/api/v1/forecast/trends` | Get trend explanation |
+| POST | `/api/v1/reorder/` | Get reorder recommendation |
+| POST | `/api/v1/chat/` | Chat with AI agent |
+| POST | `/api/v1/data/upload` | Upload CSV or JSON file |
+| POST | `/api/v1/data/reset` | Reset to default dataset |
+| GET | `/api/v1/data/info` | Get current dataset info |
 
-### Reorder Engine
-Uses industry-standard supply chain formulas:
-```
-Safety Stock  = 1.65 × σ_demand × √lead_time × multiplier
-Reorder Point = (avg_daily_demand × lead_time) + safety_stock
-Order Qty     = forecasted_demand + safety_stock - current_inventory
-```
-
-### LLM Explanation
-- SHAP top drivers + forecast stats are passed to Llama 3
-- Llama 3 generates plain English business explanations
-- Falls back to rule-based explanation if Ollama is unavailable
+Full interactive docs at: http://localhost:8000/docs
 
 ---
 
-## 📊 Dataset
+## Deploying to Render (Backend)
 
-- **73,100 rows** of retail store inventory data
-- **5 stores** × **multiple products** × **2 years** of daily data
-- Features: Units Sold, Price, Discount, Weather, Promotions, Competitor Pricing, Seasonality
+### 1. Pre-train models locally before deploying
+
+```bash
+conda activate inventory-agent
+cd inventory-demand-forecasting-shap
+python scripts/pretrain_models.py
+```
+
+This saves trained models as `.pkl` files in `backend/models/`. Commit them before pushing.
+
+### 2. Push to GitHub
+
+```bash
+git add backend/models/
+git commit -m "add pre-trained models"
+git push
+```
+
+### 3. Create Render service
+
+1. Go to https://render.com and sign up
+2. Click **New → Web Service**
+3. Connect your GitHub repository
+4. Set the following:
+
+| Setting | Value |
+|---|---|
+| Branch | `deploy/production` |
+| Root Directory | `inventory-demand-forecasting-shap/backend` |
+| Build Command | `pip install -r requirements.txt` |
+| Start Command | `PYTHONPATH=. python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
+
+5. Add environment variables:
+
+| Key | Value |
+|---|---|
+| `GEMINI_API_KEY` | your Google AI API key |
+| `GEMINI_MODEL` | `gemma-3-1b-it` |
+
+6. Click **Deploy**
+
+Your API will be live at: `https://your-app-name.onrender.com`
 
 ---
 
-## 🐳 Docker Deployment
+## Deploying to Vercel (Frontend)
+
+### 1. Update the API URL
+
+In `frontend/.env.production`, set your Render backend URL:
+```
+VITE_API_URL=https://your-app-name.onrender.com/api/v1
+```
+
+### 2. Create Vercel project
+
+1. Go to https://vercel.com and sign up
+2. Click **New Project**
+3. Import your GitHub repository
+4. Set the following:
+
+| Setting | Value |
+|---|---|
+| Branch | `deploy/production` |
+| Root Directory | `inventory-demand-forecasting-shap/frontend` |
+| Build Command | `npm run build` |
+| Output Directory | `dist` |
+
+5. Add environment variable:
+
+| Key | Value |
+|---|---|
+| `VITE_API_URL` | `https://your-app-name.onrender.com/api/v1` |
+
+6. Click **Deploy**
+
+Your frontend will be live at: `https://your-app-name.vercel.app`
+
+---
+
+## Docker Deployment
 
 ```bash
 docker compose up --build
 ```
 
-Services started:
+Services:
 - Backend API on port `8000`
 - Frontend on port `3000`
-- Ollama on port `11434`
 - Redis on port `6379`
 
 ---
 
-## ✅ Running Tests
+## Running Tests
 
 ```bash
 cd backend
@@ -211,11 +319,32 @@ PYTHONPATH=. pytest tests/ -v
 
 ---
 
-## 🌟 Key Features
+## How the Model Trains
 
-- **Zero manual training** — models train automatically on first API request and cache in memory
-- **SHAP explainability** — every forecast shows which features drove the prediction
-- **LLM reasoning** — Llama 3 explains trends and reorder decisions in plain English
-- **LangChain ReAct agent** — conversational interface for inventory Q&A
-- **Fallback handling** — works even when Ollama is slow or unavailable
-- **Production ready** — async FastAPI, structured logging, Pydantic validation, Docker support
+No manual training step is needed. The system trains automatically:
+
+1. You hit any forecast or reorder endpoint for the first time
+2. The system loads your CSV/JSON data
+3. Builds 20 features: lag (7/14/21/28 days), rolling averages, calendar, price, promotions, weather
+4. Splits data 80/20 by time (no data leakage)
+5. Trains XGBoost with early stopping
+6. Caches the model in memory for all future requests
+7. Each store + product combination gets its own model
+
+First request per product takes 3 to 5 seconds. All subsequent requests are instant.
+
+---
+
+## Uploading Your Own Data
+
+1. Open the dashboard at http://localhost:3000
+2. Click the **Data** tab
+3. Upload your CSV or JSON file
+4. The system retrains automatically on your data
+5. Store and product dropdowns update to show your data
+
+---
+
+## License
+
+MIT
