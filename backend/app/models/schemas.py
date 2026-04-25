@@ -84,3 +84,20 @@ class InventoryRisk(BaseModel):
 class KPIRiskResponse(BaseModel):
     kpis: KPIData
     risk: InventoryRisk
+
+
+class DayPattern(BaseModel):
+    day: str
+    avg_demand: float
+
+
+class MonthPattern(BaseModel):
+    month: str
+    avg_demand: float
+
+
+class DemandPatternResponse(BaseModel):
+    store_id: str
+    product_id: str
+    weekly_pattern: list[DayPattern]
+    monthly_pattern: list[MonthPattern]

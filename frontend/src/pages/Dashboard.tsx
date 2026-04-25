@@ -5,6 +5,7 @@ import AgentChat from "../components/AgentChat";
 import DataUpload from "../components/DataUpload";
 import KPICards, { KPIData } from "../components/KPICards";
 import InventoryRisk, { RiskData } from "../components/InventoryRisk";
+import DemandPattern from "../components/DemandPattern";
 const API = import.meta.env.VITE_API_URL;
 
 export default function Dashboard() {
@@ -133,6 +134,9 @@ export default function Dashboard() {
             <div className="content-grid">
               <ForecastChart storeId={applied.storeId} productId={applied.productId} />
               <ReorderTable storeId={applied.storeId} productId={applied.productId} />
+            </div>
+            <div style={{ marginTop: 24 }}>
+              <DemandPattern storeId={applied.storeId} productId={applied.productId} />
             </div>
             <div style={{ marginTop: 24 }}>
               <InventoryRisk data={riskData} loading={kpiLoading} />

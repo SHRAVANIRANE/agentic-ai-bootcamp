@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from app.models.schemas import ForecastRequest, ForecastResponse, TrendExplanation, KPIRiskRequest, KPIRiskResponse
+from app.models.schemas import ForecastRequest, ForecastResponse, TrendExplanation, KPIRiskRequest, KPIRiskResponse, DemandPatternResponse
 from app.services.forecasting_service import ForecastingService
 from app.services.data_service import DataService
 from app.api.dependencies import get_forecasting_service, get_data_service
@@ -40,3 +40,12 @@ async def get_kpi_risk(
     service: ForecastingService = Depends(get_forecasting_service),
 ) -> KPIRiskResponse:
     return await service.get_kpis_and_risk(req.store_id, req.product_id, req.current_inventory)
+
+
+@router.get("/pattern", response_model=DemandPatternResponse)
+def get_pattern(
+    store_id: str,
+    product_id: str,
+    service: ForecastingService = Depends(get_forecasting_service),
+) -> DemandPatternResponse:
+    return service.get_demand_pattern(store_id, product_id)

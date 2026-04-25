@@ -4,7 +4,7 @@ from pathlib import Path
 from app.services.data_service import DataService
 from app.services.llm_service import LLMService
 from app.pipeline.xgboost_forecaster import XGBoostForecaster
-from app.models.schemas import ForecastResponse, ForecastPoint, TrendExplanation, KPIRiskResponse, KPIData, InventoryRisk
+from app.models.schemas import ForecastResponse, ForecastPoint, TrendExplanation, KPIRiskResponse, KPIData, InventoryRisk, DemandPatternResponse, DayPattern, MonthPattern
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -174,6 +174,42 @@ class ForecastingService:
                 stockout_prediction_days=stockout_days,
                 risk_insight=insight
             )
+        )
+
+    def get_demand_pattern(self, store_id: str, product_id: str) -> DemandPatternResponse:
+        df = self.data_service.get_product_data(store_id, product_id)
+        if df.empty:
+            return DemandPatternResponse(store_id=store_id, product_id=product_id, weekly_pattern=[], monthly_pattern=[])
+            
+        # Ensure date is datetime
+        df["date"] = pd.to_datetime(df["date"])
+        
+        # Calculate Weekly Pattern (Day of Week)
+        df["day_of_week"] = df["date"].dt.day_name()
+        days_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        weekly_grouped = df.groupby("day_of_week")["units_sold"].mean().reindex(days_order).fillna(0)
+        
+        weekly_pattern = [
+            DayPattern(day=day[:3], avg_demand=round(float(val), 1))
+            for day, val in weekly_grouped.items()
+        ]
+        
+        # Calculate Monthly Pattern
+        df["month"] = df["date"].dt.month_name()
+        months_order = ["January", "February", "March", "April", "May", "June", 
+                        "July", "August", "September", "October", "November", "December"]
+        monthly_grouped = df.groupby("month")["units_sold"].mean().reindex(months_order).fillna(0)
+        
+        monthly_pattern = [
+            MonthPattern(month=month[:3], avg_demand=round(float(val), 1))
+            for month, val in monthly_grouped.items()
+        ]
+        
+        return DemandPatternResponse(
+            store_id=store_id,
+            product_id=product_id,
+            weekly_pattern=weekly_pattern,
+            monthly_pattern=monthly_pattern
         )
 
     @staticmethod
