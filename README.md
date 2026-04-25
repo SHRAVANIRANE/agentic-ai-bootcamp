@@ -16,6 +16,12 @@ Built with XGBoost for demand forecasting, LangChain for agent orchestration, Fa
 - Provides a conversational AI chat interface grounded in real forecast data
 - Supports uploading your own CSV or JSON data to retrain on company-specific inventory
 
+### New Features ✨
+- **KPI Summary Cards**: Real-time insights into Total Demand, Reorder Alerts, Stock Risk, and Forecast Accuracy.
+- **Intelligent Inventory Risk Detection**: Automatically predicts stockout dates and flags overstock/understock scenarios with actionable AI insights.
+- **Seasonal Demand Pattern Visualization**: Interactive Recharts components displaying weekly rhythms and monthly macro-seasonality.
+- **Glassmorphic Dashboard UI**: A premium dark-mode aesthetic with dynamic hover effects, status badges, and prioritized reorder alerts.
+
 ---
 
 ## Tech Stack
@@ -197,6 +203,8 @@ date, store_id, product_id, units_sold
 | GET | `/api/v1/forecast/stores` | List all stores |
 | GET | `/api/v1/forecast/products?store_id=S001` | List products for a store |
 | GET | `/api/v1/forecast/trends` | Get trend explanation |
+| POST | `/api/v1/forecast/kpi_risk` | Get KPI metrics and inventory risk profile |
+| GET | `/api/v1/forecast/pattern` | Get weekly and monthly seasonal demand patterns |
 | POST | `/api/v1/reorder/` | Get reorder recommendation |
 | POST | `/api/v1/chat/` | Chat with AI agent |
 | POST | `/api/v1/data/upload` | Upload CSV or JSON file |
